@@ -2,11 +2,21 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App';
+import { createBrowserRouter, createRoutesFromElements, RouterProvider, Route } from 'react-router-dom';
+import { Dashboard } from './pages/Dashboard';
+import NewEvent from './pages/NewEvent';
+
+const router = createBrowserRouter(createRoutesFromElements(
+  <Route path='/' element={<App />}>
+    <Route path='/' index={true} element={<Dashboard />} />
+    <Route path='/new-event' element={<NewEvent />} />
+  </Route>
+))
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
-    <App />
+    <RouterProvider router={router} />
   </React.StrictMode>
 );
 
