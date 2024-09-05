@@ -1,14 +1,16 @@
 import { createSlice } from "@reduxjs/toolkit";
 
-const initialState = {events: localStorage.getItem("eventsState") ? JSON.parse(localStorage.getItem("eventsState")) : null}
+const initialState = localStorage.getItem("eventsState") ? JSON.parse(localStorage.getItem("eventsState")) : {events: []}
 
 const eventSlice = createSlice({
-    name: "events",
+    name: "eventsState",
     initialState,
     reducers: {
         addNewEvent: (state, action) => {
             state.events = [...state.events, action.payload];
-            localStorage.setItem("events", state.events);
+            const eventsState = localStorage.getItem("eventsState") ? JSON.parse(localStorage.getItem("eventsState")) : {events: []};
+            eventsState.events = state.events;
+            localStorage.setItem("eventsState", JSON.stringify(eventsState));
         }
     }
 })

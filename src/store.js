@@ -3,8 +3,12 @@ import eventSliceReducer from "./Features/eventsSlice";
 
 const store = configureStore({
     reducer: {
-        events: eventSliceReducer,
+        eventsState: eventSliceReducer,
     },
+    middleware: (getDefaultMiddleware) =>
+        getDefaultMiddleware({
+          serializableCheck: false,
+        }),
     devTools: true,
 })
 
