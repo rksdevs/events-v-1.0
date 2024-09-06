@@ -1,6 +1,7 @@
 # Events App - Track your events at your fingertips
 
 This is an app where you can create multiple events, customize them as recurring events based on your needs. You can see the preview of the events you created immediately.
+Application is live at: [https://events-v-1-0.vercel.app/](url)
 
 ## Features
 
