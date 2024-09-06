@@ -20,9 +20,6 @@ import {
 import { useEffect } from "react";
 import { useSelector } from "react-redux";
 
-export const description =
-  "An products dashboard with a sidebar navigation. The sidebar has icon navigation. The content area has a breadcrumb and search in the header. It displays a list of products in a table with actions.";
-
 export function Dashboard() {
   const navigate = useNavigate();
   const { events } = useSelector((state) => state.eventsState);

@@ -39,11 +39,12 @@ import {
 } from "../components/ui/dialog";
 import { Checkbox } from "../components/ui/checkbox";
 import Preview from "../components/Preview";
+import { useToast } from "../hooks/use-toast";
 
 const NewEvent = () => {
   //   const { events } = useSelector((state) => state.eventsState);
   const dispatch = useDispatch();
-
+  const { toast } = useToast();
   const [date, setDate] = useState({
     from: null,
     to: null,
@@ -115,10 +116,16 @@ const NewEvent = () => {
 
   const handleEventCreation = async (e) => {
     e.preventDefault();
-    // setShowPreview(true);
+    if (eventType === "recurring" && !date?.to) {
+      toast({
+        title: "Missing End Date",
+        description: "Need to add end date for recurring events",
+        variant: "destructive",
+      });
+      return;
+    }
     randomIdCreator(eventName);
     const payload = {
-      //if eventType === "recurring" then send frequency otherwise remove frequency
       eventId: randomIdCreator(eventName),
       eventName,
       eventType,
