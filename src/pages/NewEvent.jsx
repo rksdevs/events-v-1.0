@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { CalendarIcon } from "@radix-ui/react-icons";
 import { addDays, format } from "date-fns";
 import { DateRange } from "react-day-picker";
@@ -28,15 +28,87 @@ import {
 } from "../components/ui/select";
 import { useDispatch, useSelector } from "react-redux";
 import { addNewEvent } from "../Features/eventsSlice";
+import DatePickerComponent from "../components/DatePickerComponent";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "../components/ui/dialog";
+import { Checkbox } from "../components/ui/checkbox";
 
 const NewEvent = () => {
   const { events } = useSelector((state) => state.eventsState);
   const dispatch = useDispatch();
 
-  const [date, setDate] = useState();
+  const [date, setDate] = useState({
+    from: null,
+    to: null,
+  });
+  //   const [dateRange, setRange] = useState({
+  //     from: null,
+  //     to: null,
+  //   });
   //   const [showPreview, setShowPreview] = useState(false);
   const [eventName, setEventName] = useState("");
   const [eventType, setEventType] = useState("");
+  const [frequency, setFrequency] = useState("");
+  const [reminders, setReminders] = useState([]);
+  const [customFrequency, setCustomFrequency] = useState("");
+  const [daysOfWeek, setDaysOfWeek] = useState([]);
+  const [nthDayOfMonth, setNthDayOfMonth] = useState("");
+  const [nthDayOfMonthPayload, setNthDayOfMonthPayload] = useState({
+    day: null,
+    weekWiseDay: null,
+  });
+  const [customRecurrenceInterval, setCustomRecurrenceInterval] = useState(0);
+  const [customRecurrenceIntervalType, setCustomRecurrenceIntervalType] =
+    useState("");
+
+  const [openDialogOne, setOpenDialogOne] = useState(false);
+  const [openDialogTwo, setOpenDialogTwo] = useState(false);
+  const [openDialogThree, setOpenDialogThree] = useState(false);
+
+  const weekDays = [
+    {
+      id: "1",
+      label: "Monday",
+      value: "monday",
+    },
+    {
+      id: "2",
+      label: "Tuesday",
+      value: "tuesday",
+    },
+    {
+      id: "3",
+      label: "Wednesday",
+      value: "wednesday",
+    },
+    {
+      id: "4",
+      label: "Thursday",
+      value: "thursday",
+    },
+    {
+      id: "5",
+      label: "Friday",
+      value: "friday",
+    },
+    {
+      id: "6",
+      label: "Saturday",
+      value: "saturday",
+    },
+    {
+      id: "0",
+      label: "Sunday",
+      value: "sunday",
+    },
+  ];
 
   const randomIdCreator = (name) => {
     let randomNumber = Math.floor(Math.random() * 100000000000);
@@ -51,14 +123,93 @@ const NewEvent = () => {
     // setShowPreview(true);
     randomIdCreator(eventName);
     const payload = {
+      //if eventType === "recurring" then send frequency otherwise remove frequency
       eventId: randomIdCreator(eventName),
       eventName,
       eventType,
       eventDate: date,
+      frequency: eventType === "recurring" ? frequency : null,
+      reminders,
     };
     console.log(payload);
     dispatch(addNewEvent(payload));
+    setEventName("");
+    setEventType("");
+    setFrequency("");
+    setReminders([]);
+    setCustomFrequency("");
+    setDate({
+      from: null,
+      to: null,
+    });
   };
+
+  const getWeekOfMonth = (dateInput) => {
+    const dayOfMonth = dateInput.getDate(); // Get the day of the month
+    const dayOfWeek = dateInput.getDay(); // Get the day of the week (0 is Sunday, 1 is Monday, etc.)
+
+    // Create a new date at the start of the month
+    const startOfMonth = new Date(
+      dateInput.getFullYear(),
+      dateInput.getMonth(),
+      1
+    );
+
+    let count = 0;
+
+    for (let day = 1; day <= dayOfMonth; day++) {
+      let currentDay = new Date(
+        dateInput.getFullYear(),
+        dateInput.getMonth(),
+        day
+      ).getDay();
+
+      //eg if thursday (4) === (4) than increament
+      if (currentDay === dayOfWeek) {
+        count++;
+      }
+
+      if (day > dayOfMonth) {
+        break;
+      }
+    }
+
+    return count;
+  };
+
+  const handleWeekdayCheckboxChange = (dayToCheck) => {
+    let result = [];
+    if (daysOfWeek?.includes(dayToCheck)) {
+      result = daysOfWeek.filter((element) => element !== dayToCheck);
+    } else {
+      result = [...daysOfWeek, dayToCheck];
+    }
+
+    setDaysOfWeek(result);
+  };
+
+  useEffect(() => {
+    const weekDayArray = [
+      "sunday",
+      "monday",
+      "tuesday",
+      "wednesday",
+      "thursday",
+      "friday",
+      "saturday",
+    ];
+    if (daysOfWeek.length) {
+      console.log(daysOfWeek);
+    }
+
+    if (nthDayOfMonth) {
+      setNthDayOfMonthPayload({
+        day: weekDayArray[new Date(nthDayOfMonth).getDay()],
+        weekWiseDay: getWeekOfMonth(nthDayOfMonth),
+      });
+      //   console.log(getWeekOfMonth(nthDayOfMonth));
+    }
+  }, [daysOfWeek, nthDayOfMonth]);
 
   return (
     <div className="gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
@@ -120,12 +271,277 @@ const NewEvent = () => {
                         </SelectContent>
                       </Select>
                     </div>
+                    {eventType === "recurring" ? (
+                      <div className="flex flex-col md:flex-row items-center gap-3">
+                        <Label
+                          htmlFor="frequency"
+                          className="w-full md:w-2/5 text-center md:text-left"
+                        >
+                          Recurrance Frequency
+                        </Label>
+                        <Select
+                          className="w-full md:w-3/5"
+                          onValueChange={(e) => setFrequency(e)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue
+                              placeholder="Select event type"
+                              value={frequency}
+                            />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="daily">Daily</SelectItem>
+                            <SelectItem value="weekly">Weekly</SelectItem>
+                            <SelectItem value="monthly">Monthly</SelectItem>
+                            <SelectItem value="yearly">Yearly</SelectItem>
+                            <SelectItem value="custom">
+                              Custom Frequency
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    ) : (
+                      ""
+                    )}
+                    {frequency === "custom" ? (
+                      <Card>
+                        <CardHeader>
+                          <CardTitle>Custom Frequency</CardTitle>
+                          <CardDescription>
+                            Setup custom frequency
+                          </CardDescription>
+                        </CardHeader>
+                        <CardContent className="flex gap-3">
+                          <Dialog
+                            open={openDialogOne}
+                            onOpenChange={setOpenDialogOne}
+                          >
+                            <DialogTrigger asChild>
+                              <Button variant="outline">
+                                Day Wise Recurrence
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent className="sm:max-w-[425px]">
+                              <DialogHeader>
+                                <DialogTitle>
+                                  Specific Days of the Week
+                                </DialogTitle>
+                                <DialogDescription>
+                                  Select the days on which you would like to set
+                                  reminder for every week.
+                                </DialogDescription>
+                              </DialogHeader>
+                              <div className="grid gap-4 py-4">
+                                <div className="grid grid-cols-4 items-center gap-4">
+                                  {weekDays?.map((day) => (
+                                    <div
+                                      className="flex items-center space-x-2"
+                                      key={day?.id}
+                                    >
+                                      <Checkbox
+                                        checked={daysOfWeek.includes(day?.id)}
+                                        onCheckedChange={() =>
+                                          handleWeekdayCheckboxChange(day?.id)
+                                        }
+                                      />
+                                      <label
+                                        htmlFor={day?.id}
+                                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                                      >
+                                        {day?.label}
+                                      </label>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                              <DialogFooter>
+                                <Button
+                                  type="submit"
+                                  onClick={() => {
+                                    setCustomFrequency("daywise");
+                                    setOpenDialogOne(false);
+                                  }}
+                                >
+                                  Save changes
+                                </Button>
+                              </DialogFooter>
+                            </DialogContent>
+                          </Dialog>
+                          <Dialog
+                            open={openDialogTwo}
+                            onOpenChange={setOpenDialogTwo}
+                          >
+                            <DialogTrigger asChild>
+                              <Button variant="outline">
+                                Nth Day of the Month
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent className="sm:max-w-[425px]">
+                              <DialogHeader>
+                                <DialogTitle>
+                                  Select a specific day of the month
+                                </DialogTitle>
+                                <DialogDescription>
+                                  Choose the specific day of the month from the
+                                  calendar below.
+                                </DialogDescription>
+                              </DialogHeader>
+                              <div className="grid gap-4 py-4">
+                                <Calendar
+                                  className="rounded-md  border shadow"
+                                  mode="single"
+                                  selected={nthDayOfMonth}
+                                  onSelect={setNthDayOfMonth}
+                                />
+                                <div className="grid grid-cols-4 items-center gap-4">
+                                  {nthDayOfMonthPayload?.weekWiseDay} --{" "}
+                                  {nthDayOfMonthPayload?.day}
+                                </div>
+                              </div>
+                              <DialogFooter>
+                                <Button
+                                  type="submit"
+                                  onClick={() => {
+                                    setCustomFrequency("nthDayOfMonth");
+                                    setOpenDialogTwo(false);
+                                  }}
+                                >
+                                  Save changes
+                                </Button>
+                              </DialogFooter>
+                            </DialogContent>
+                          </Dialog>
+                          <Dialog
+                            open={openDialogThree}
+                            onOpenChange={setOpenDialogThree}
+                          >
+                            <DialogTrigger asChild>
+                              <Button variant="outline">
+                                Based on N days/week/month/year
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent className="sm:max-w-[425px]">
+                              <DialogHeader>
+                                <DialogTitle>Select an interval</DialogTitle>
+                                <DialogDescription>
+                                  Choose an interval - every X
+                                  days/weeks/months/years
+                                </DialogDescription>
+                              </DialogHeader>
+                              <div className="grid gap-4 py-4">
+                                <Label
+                                  htmlFor="intervalType"
+                                  className="w-full md:w-2/5 text-center md:text-left"
+                                >
+                                  Interval Type
+                                </Label>
+                                <Select
+                                  className="w-full md:w-3/5"
+                                  onValueChange={(e) =>
+                                    setCustomRecurrenceIntervalType(e)
+                                  }
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue
+                                      placeholder="Select event type"
+                                      value={customRecurrenceIntervalType}
+                                    />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="days">Days</SelectItem>
+                                    <SelectItem value="weeks">Weeks</SelectItem>
+                                    <SelectItem value="months">
+                                      Months
+                                    </SelectItem>
+                                    <SelectItem value="years">Years</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div className="grid gap-4 py-4">
+                                <Label
+                                  htmlFor="intervalCount"
+                                  className="w-full md:w-2/5 text-center md:text-left"
+                                >
+                                  Every N {customRecurrenceIntervalType}
+                                </Label>
+                                <Select
+                                  className="w-full md:w-3/5"
+                                  onValueChange={(e) =>
+                                    setCustomRecurrenceInterval(e)
+                                  }
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue
+                                      placeholder="Select N"
+                                      value={customRecurrenceInterval}
+                                    />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {customRecurrenceIntervalType === "days"
+                                      ? Array.from(
+                                          { length: 7 },
+                                          (_, i) => i + 1
+                                        ).map((day) => (
+                                          <SelectItem key={day} value={day}>
+                                            {day}
+                                          </SelectItem>
+                                        ))
+                                      : customRecurrenceIntervalType ===
+                                        "months"
+                                      ? Array.from(
+                                          { length: 12 },
+                                          (_, i) => i + 1
+                                        ).map((month) => (
+                                          <SelectItem key={month} value={month}>
+                                            {month}
+                                          </SelectItem>
+                                        ))
+                                      : customRecurrenceIntervalType === "weeks"
+                                      ? Array.from(
+                                          { length: 4 },
+                                          (_, i) => i + 1
+                                        ).map((week) => (
+                                          <SelectItem key={week} value={week}>
+                                            {week}
+                                          </SelectItem>
+                                        ))
+                                      : Array.from(
+                                          { length: 100 },
+                                          (_, i) => i + 1
+                                        ).map((year) => (
+                                          <SelectItem key={year} value={year}>
+                                            {year}
+                                          </SelectItem>
+                                        ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <DialogFooter>
+                                <Button
+                                  type="submit"
+                                  onClick={() => {
+                                    setCustomFrequency("intervalBased");
+                                    setOpenDialogThree(false);
+                                  }}
+                                >
+                                  Save changes
+                                </Button>
+                              </DialogFooter>
+                            </DialogContent>
+                          </Dialog>
+                        </CardContent>
+                      </Card>
+                    ) : (
+                      ""
+                    )}
                     <div className="flex flex-col md:flex-row items-center gap-3">
                       <Label
                         htmlFor="eventType"
                         className="w-full md:w-2/5 text-center md:text-left"
                       >
-                        Select Date
+                        {eventType === "recurring"
+                          ? "Select Start & End Date"
+                          : "Select Date"}
                       </Label>
                       <Popover>
                         <PopoverTrigger asChild>
@@ -137,19 +553,32 @@ const NewEvent = () => {
                             )}
                           >
                             <CalendarIcon className="mr-2 h-4 w-4" />
-                            {date ? (
-                              format(date, "PPP")
+                            {date?.from ? (
+                              date.to ? (
+                                <>
+                                  {format(date.from, "LLL dd, y")} -{" "}
+                                  {format(date.to, "LLL dd, y")}
+                                </>
+                              ) : (
+                                format(date.from, "LLL dd, y")
+                              )
                             ) : (
                               <span>Pick a date</span>
                             )}
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar
-                            mode="single"
-                            selected={date}
-                            onSelect={setDate}
-                            initialFocus
+                          <DatePickerComponent
+                            date={date}
+                            setDate={setDate}
+                            eventType={eventType}
+                            frequency={eventType === "regular" ? 1 : frequency}
+                            setReminders={setReminders}
+                            customFrequency={customFrequency}
+                            daysOfWeek={daysOfWeek}
+                            nthDayOfMonthPayload={nthDayOfMonthPayload}
+                            intervalType={customRecurrenceIntervalType}
+                            intervalValue={customRecurrenceInterval}
                           />
                         </PopoverContent>
                       </Popover>
@@ -164,20 +593,37 @@ const NewEvent = () => {
                 Preview Event
               </legend>
               <CardContent>
-                {events?.length &&
-                  events?.map((event) => (
-                    <div key={event?.eventId}>
-                      <Card className="m-2">
-                        <CardHeader>
-                          <CardTitle>{event?.eventName}</CardTitle>
-                          <CardDescription>{event?.eventType}</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                          <p>{event?.eventDate}</p>
-                        </CardContent>
-                      </Card>
-                    </div>
-                  ))}
+                {events?.length
+                  ? events?.map((event) => (
+                      <div key={event?.eventId}>
+                        <Card className="m-2">
+                          <CardHeader>
+                            <CardTitle>{event?.eventName}</CardTitle>
+                            <CardDescription>
+                              {event?.eventType}
+                            </CardDescription>
+                          </CardHeader>
+                          <CardContent>
+                            {event?.eventType === "regular" ? (
+                              <Calendar
+                                className="rounded-md border shadow"
+                                mode="single"
+                                selected={new Date(event?.reminders)}
+                              />
+                            ) : (
+                              <Calendar
+                                className="rounded-md border shadow"
+                                mode="multiple"
+                                selected={event?.reminders?.map(
+                                  (reminder) => new Date(reminder)
+                                )}
+                              />
+                            )}
+                          </CardContent>
+                        </Card>
+                      </div>
+                    ))
+                  : ""}
               </CardContent>
             </fieldset>
           </CardContent>
